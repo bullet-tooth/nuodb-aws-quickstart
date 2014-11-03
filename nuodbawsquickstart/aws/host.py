@@ -18,6 +18,7 @@ class Host:
                enableAutomation = False,
                enableAutomationBootstrap = False,
                hostname = None,
+               instance_id = None,
                isBroker = False, 
                portRange = 48005, 
                peers = [],
@@ -35,11 +36,19 @@ class Host:
 
     for reservation in self.ec2Connection.get_all_reservations():
       for instance in reservation.instances:
+        if self.instance_id != None and instance.id == self.instance_id:
+          self.exists = True
+          self.instance = instance
+          self.name = instance.tags['Name']
+          self.zone = instance._placement
+          self.id = instance_id
+          self.update_data()
         if "Name" in instance.__dict__['tags'] and instance.__dict__['tags']['Name'] == name and (instance.state == 'running' or instance.state == 'pending'):
           self.exists = True
           self.instance = instance
           self.zone = instance._placement
           self.update_data()
+       
     # If tagging doesn't work, try ssh'ing to the machine and getting the info.
     if self.exists == False and self.is_port_available(22, self.name):
       try:
@@ -56,6 +65,9 @@ class Host:
               self.zone = instance._placement
               self.update_data()
         
+  def __getitem__(self, attr):
+    return getattr(self, attr)
+  
   def agent_action(self, action):
     command = "sudo service nuoagent " + action
     (rc, stdout, stderr) = self.execute_command(command)

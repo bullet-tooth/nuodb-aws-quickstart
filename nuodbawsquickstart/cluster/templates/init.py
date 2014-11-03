@@ -3,7 +3,7 @@ import subprocess
 import json, os, urllib2
 
 commands = [
-            "hostname $hostname",
+            #"hostname $hostname",
             "yum -y update",
             "yum -y install git mailx",
             "yum -y install https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-11.8.2-1.el6.x86_64.rpm",
@@ -24,11 +24,11 @@ def execute(command):
   stdout, stderr = p.communicate()
   return (p.returncode, stdout, stderr)
 
-def get_public_ip():
-  url = "http://169.254.169.254/latest/meta-data/public-ipv4"
+def get_public_hostname():
+  url = "http://169.254.169.254/latest/meta-data/public-hostname"
   return urllib2.urlopen(url).read()
 
-def mail(destination = "$email_address", msg = "", subject = "Failure starting host $hostname"):
+def mail(destination = "$email_address", msg = "", subject = "Failure starting host %s" % get_public_hostname()):
   command = "echo %s | mail -s %s %s" % (msg, subject, destination)
   execute(command)
 
@@ -37,13 +37,14 @@ for command in commands:
   # ignore errors
   
 ohai = json.loads(execute("/usr/bin/ohai")[1])
-public_ip = get_public_ip()
-if execute("grep -c $hostname /etc/hosts")[0] != 0:
-    f = open("/etc/hosts", "a")
-    f.write("\t".join([public_ip, "$hostname" + "\n"]))
-    f.close()
+public_address = get_public_hostname()
+#if execute("grep -c $hostname /etc/hosts")[0] != 0:
+#    f = open("/etc/hosts", "a")
+#    f.write("\t".join([public_address, "$hostname" + "\n"]))
+#    f.close()
 chef_data = json.loads('$chef_json')
-chef_data['nuodb']['altAddr'] = public_ip
+chef_data['nuodb']['altAddr'] = public_address
+chef_data['nuodb']['autoconsole']['brokers'] = [public_address]
 f = open("/var/chef/data.json", "w")
 f.write(json.dumps(chef_data))
 f.close()
