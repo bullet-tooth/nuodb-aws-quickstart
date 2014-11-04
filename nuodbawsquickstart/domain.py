@@ -1,6 +1,5 @@
 # requests module available at http://docs.python-requests.org/en/latest/
 
-import nuodbawsquickstart
 import collections, inspect, json, re, requests, socket
 
 class Domain():

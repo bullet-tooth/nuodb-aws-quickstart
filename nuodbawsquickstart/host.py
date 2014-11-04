@@ -1,5 +1,4 @@
 import boto.ec2
-import boto.route53
 import paramiko 
 import base64, inspect, json, os, socket, string, sys, tempfile, time
 

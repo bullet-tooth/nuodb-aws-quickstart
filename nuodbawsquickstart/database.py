@@ -1,6 +1,5 @@
 import collections
 import json
-import nuodbawsquickstart.cluster
 import random
 
 class Database():

@@ -3,8 +3,7 @@ Created on Jan 28, 2014
 
 @author: rkourtz
 '''
-
-import nuodbawsquickstart.aws
+import nuodbawsquickstart
 import inspect, json, os, random, string, sys, time
 
 class Cluster:
@@ -73,7 +72,7 @@ class Cluster:
         stub['region'] = zone
         stub['security_group_ids'] = security_group_ids
         stub['subnet'] = subnets[len(stub) % len(subnets)]
-        stub['host'] = nuodbawsquickstart.aws.Host(name, ec2Connection=self.zoneconnections[zone].connection,  
+        stub['host'] = nuodbawsquickstart.Host(name, ec2Connection=self.zoneconnections[zone].connection,  
                                                domain = self.domain_name, domainPassword = self.domain_password, 
                                                advertiseAlt = True, region = zone,
                                                agentPort = agentPort, portRange = subPortRange,
@@ -126,7 +125,7 @@ class Cluster:
       return obj
              
     def connect_zone(self, zone):
-      self.zoneconnections[zone] = nuodbawsquickstart.aws.Zone(zone)
+      self.zoneconnections[zone] = nuodbawsquickstart.Zone(zone)
       self.zoneconnections[zone].connect(aws_access_key=self.aws_access_key, aws_secret=self.aws_secret)
       return self.zoneconnections[zone]
         
@@ -188,7 +187,7 @@ class Cluster:
           for reservation in self.zoneconnections[myzone].connection.get_all_reservations():
             for instance in reservation.instances:
               if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-                myhost = {'host': nuodbawsquickstart.aws.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
+                myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
                                              domain = self.domain_name, domainPassword = self.domain_password, 
                                              instance_id = instance.id,
                                              ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile) }
@@ -197,7 +196,7 @@ class Cluster:
         for reservation in self.zoneconnections[zone].connection.get_all_reservations():
           for instance in reservation.instances:
             if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-              myhost = {'host': nuodbawsquickstart.aws.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
+              myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
                                            domain = self.domain_name, domainPassword = self.domain_password, 
                                            instance_id = instance.id,
                                            ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile) }

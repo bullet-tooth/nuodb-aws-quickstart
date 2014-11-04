@@ -68,7 +68,7 @@ def get_instance_type(c):
   return "m3.xlarge"
 
   instance_types = []
-  for offering in nuodbawsquickstart.aws.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"]).get_spot_price_history():
+  for offering in nuodbawsquickstart.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"]).get_spot_price_history():
     if offering.instance_type not in instance_types and offering.instance_type[0] in ["m", "t", "r", "c"]:
       instance_types.append(offering.instance_type)
   instance_types = sorted(instance_types)
@@ -85,7 +85,7 @@ def get_zone_info(c):
   r = {}
   zone_count = user_prompt("How many AWS regions? (1-7)? ", range(1,8))
   # open a Boto connection to get metadata
-  aws_conn = nuodbawsquickstart.aws.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"])
+  aws_conn = nuodbawsquickstart.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"])
   available_zones = aws_conn.get_all_regions()
   if zone_count == "7":
     for zone in available_zones:
@@ -106,7 +106,7 @@ def get_zone_info(c):
   for region in r:
     # Server count 
     r[region]["servers"] = user_prompt(region + " --- How many servers? (1-20) ", range(1,20))
-    zone_obj = nuodbawsquickstart.aws.Zone(region)
+    zone_obj = nuodbawsquickstart.Zone(region)
     zone_conn = zone_obj.connect(c["aws_access_key"], c["aws_secret"])
     
     # Validate SSH Key
@@ -195,15 +195,11 @@ def __main__(action = None):
             "cluster_name": { "default" : "NuoDBQuickstart", "prompt" : "What is the name of your cluster?"},
             "aws_access_key": {"default" : "", "prompt" : "What is your AWS access key?"},
             "aws_secret": {"default" : "", "prompt" : "What is your AWS secret?"},
-            #"dns_domain": {"default" : "None", "prompt" : "Enter a Route53 domain under your account. If you don't have one enter \"None\":"},
             "domain_name": {"default": "domain", "prompt": "What is the name of your NuoDB domain?"},
             "domain_password": {"default": "bird", "prompt": "What is the admin password of your NuoDB domain?"},
-            #"license": {"default": "", "prompt": "Please enter your NuoDB license- or leave empty for development version:"},
             "ssh_key": {"default": "", "prompt": "Enter your ssh keypair name that exists in all the regions you want to start instances:"},
             "ssh_keyfile": {"default": "/home/USER/.ssh/id_rsa", "prompt": "Enter the location of the private key used for ssh. Please use the absolute path: "},
             "alert_email" : {"default" : "","prompt" : "What email address would you like health alerts sent to?"},
-            #"brokers_per_zone": {"default" : 2, "prompt": "How many brokers do you want in each region?"},
-            #"custom_rpm" : {"default" : "", "prompt": "Use alternative installation package? Empty for default: "}
           }
   if action == "create":
     #### Gather all the data we need
@@ -279,7 +275,7 @@ def __main__(action = None):
     #### Actually do some work
     #######################################
     
-    mycluster =  nuodbawsquickstart.cluster.Cluster(
+    mycluster =  nuodbawsquickstart.Cluster(
                                            alert_email = c['alert_email'], ssh_key = c['ssh_key'], ssh_keyfile = c['ssh_keyfile'],
                                            aws_access_key = c['aws_access_key'], aws_secret = c['aws_secret'], 
                                            cluster_name = c['cluster_name'], domain_name = c['domain_name'],
@@ -333,7 +329,7 @@ def __main__(action = None):
       with open(config_file) as f:
         c = json.loads(f.read())
         f.close()
-      mycluster =  nuodbawsquickstart.cluster.Cluster(
+      mycluster =  nuodbawsquickstart.Cluster(
                                              alert_email = c['alert_email'], ssh_key = c['ssh_key'], ssh_keyfile = c['ssh_keyfile'],
                                              aws_access_key = c['aws_access_key'], aws_secret = c['aws_secret'], 
                                              cluster_name = c['cluster_name'], domain_name = c['domain_name'],
