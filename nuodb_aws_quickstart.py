@@ -250,7 +250,7 @@ def __main__(action = None):
       print "Found this zone info:"
       for zone in sorted(static_config["zones"].keys()):
         s = static_config["zones"][zone]
-        print "{}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
+        print "{:14}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
       res = user_prompt("Use this configuration? (y/n) ", ["y", "n"])
       if res == "y":
         c['zones'] = static_config["zones"]
@@ -259,7 +259,7 @@ def __main__(action = None):
           c["zones"] = get_zone_info(c)
           for zone in sorted(c["zones"].keys()):
             s = c["zones"][zone]
-            print "{}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
+            print "{:14}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
           res = user_prompt("Use this configuration? (y/n) ", ["y", "n"])
     else:
       res = "n"
@@ -268,7 +268,7 @@ def __main__(action = None):
         print "Here is your zone info:"
         for zone in sorted(c["zones"].keys()):
           s = c["zones"][zone]
-          print "{}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
+          print "{:14}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
         res = user_prompt("Use this configuration? (y/n) ", ["y", "n"])
       
     # Write out the config
@@ -292,15 +292,11 @@ def __main__(action = None):
       for i in range(0,z['servers']):
         root_name = "%s-%i" % (c['cluster_name'], count)
         myserver = mycluster.add_host(name=root_name, zone=zone, ami=z['ami'], subnets=z['subnets'], security_group_ids = z['security_group_ids']) # Mark the number of nodes to be created
-        print "Added %s" % root_name
+        print "Added %s (%s)" % (root_name, myserver.region)
         count += 1
     
     print "Booting the cluster"
     mycluster.create_cluster() # Actually spins up the nodes.
-    print "Cluster has started up. Here are your brokers:"
-    for broker in mycluster.get_brokers():
-      print broker
-    print
     hosts = mycluster.get_hosts()
     
     print("Waiting for an available web console")
@@ -311,9 +307,9 @@ def __main__(action = None):
     while i < wait:
       if not healthy:
         for host_id in hosts:
-          obj = mycluster.get_host(host_id)
-          host = mycluster.get_host_address(host_id)
-          url = "http://%s:%s" % (host, obj.web_console_port)
+          obj = mycluster.get_host(host_id)['host']
+          address = mycluster.get_host_address(host_id)
+          url = "http://%s:%s" % (address, obj.autoconsole_port)
           if not healthy:
             try:
               urllib2.urlopen(url, None, 2)

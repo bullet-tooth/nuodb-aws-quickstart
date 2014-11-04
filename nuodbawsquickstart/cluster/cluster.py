@@ -20,7 +20,8 @@ class Cluster:
                  enable_monitoring = True,
                  instance_type = "m3.xlarge",  
                  ssh_key = "", 
-                 ssh_keyfile = None):
+                 ssh_keyfile = None,
+                 zones = []):
       args, _, _, values = inspect.getargvalues(inspect.currentframe())
       for i in args:
         setattr(self, i, values[i])
@@ -29,53 +30,58 @@ class Cluster:
         if not os.path.exists(ssh_keyfile):
           raise Error("Can not find ssh private key %s" % self.ssh_keyfile)
         
-      self.db = {"hosts": {}}
-      self.zones = {} #store our zone connections
+      self.zoneconnections = {} #store our zone connections
+      for zone in zones:
+        self.connect_zone(zone)
+      self.db = {"hosts": self.get_existing_hosts()}
     
     def add_host(self, name, zone, ami = "", security_group_ids=[], subnets = [], agentPort = 48004 , subPortRange = 48005, nuodb_rpm_url = None, start_services = True):
-      stub= {}
-      host_id = len(self.db['hosts'])
-      if zone not in self.zones:
-        raise Error("You must connect to a zone first before you can add a host in that zone")
-      if len(subnets) == 0:
-        raise Error("You must specify the target subnets in an array")
-      # make sure ami is valid
-      valid_amis = []
-      for each_ami in self.zones[zone].amis:
-        valid_amis.append(each_ami.id)
-      if ami not in valid_amis:
-        raise Error("ami '%s' is not valid" % (ami))
-      #common Chef information
-      chef_data = {"nuodb": {"is_broker": True, "enableSystemDatabase": True, "autoconsole": {"brokers": ["localhost"]}, "webconsole": {"brokers": ["localhost"]}}}
-      chef_data["run_list"] = ["recipe[nuodb]"] 
-      chef_data['nuodb']["port"] = agentPort
-      chef_data['nuodb']["portRange"] = subPortRange
-      chef_data["nuodb"]['automationTemplate'] = "Minimally Redundant"
-      chef_data["nuodb"]['balancer'] = "RegionBalancer"
-      chef_data["nuodb"]['altAddr'] = "" # Populate this at boot time
-      chef_data["nuodb"]['region'] = zone
-      if self.alert_email != None and "@" in self.alert_email:
-        chef_data["nuodb"]['monitoring'] = {"enable": True, "alert_email": self.alert_email}
+      if name not in self.db['hosts']:
+        stub= {}
+        host_id = len(self.db['hosts'])
+        if zone not in self.zoneconnections:
+          raise Error("You must connect to a zone first before you can add a host in that zone")
+        if len(subnets) == 0:
+          raise Error("You must specify the target subnets in an array")
+        # make sure ami is valid
+        valid_amis = []
+        for each_ami in self.zoneconnections[zone].amis:
+          valid_amis.append(each_ami.id)
+        if ami not in valid_amis:
+          raise Error("ami '%s' is not valid" % (ami))
+        #common Chef information
+        chef_data = {"nuodb": {"is_broker": True, "enableSystemDatabase": True, "autoconsole": {"brokers": ["localhost"]}, "webconsole": {"brokers": ["localhost"]}}}
+        chef_data["run_list"] = ["recipe[nuodb]"] 
+        chef_data['nuodb']["port"] = agentPort
+        chef_data['nuodb']["portRange"] = subPortRange
+        chef_data["nuodb"]['automationTemplate'] = "Minimally Redundant"
+        chef_data["nuodb"]['balancer'] = "RegionBalancer"
+        chef_data["nuodb"]['altAddr'] = "" # Populate this at boot time
+        chef_data["nuodb"]['region'] = zone
+        if self.alert_email != None and "@" in self.alert_email:
+          chef_data["nuodb"]['monitoring'] = {"enable": True, "alert_email": self.alert_email}
+        else:
+          chef_data["nuodb"]['monitoring'] = {"enable": False, "alert_email": ""}
+        chef_data["nuodb"]['domain_name'] = self.domain_name
+        chef_data["nuodb"]['domain_password'] = self.domain_password
+        chef_data["nuodb"]["start_services"] = True
+        if nuodb_rpm_url != None:
+          chef_data["nuodb"]["download_url"] = nuodb_rpm_url
+        stub['chef_data'] = chef_data
+        stub['ami'] = ami
+        stub['name'] = name
+        stub['region'] = zone
+        stub['security_group_ids'] = security_group_ids
+        stub['subnet'] = subnets[len(stub) % len(subnets)]
+        stub['host'] = nuodbawsquickstart.aws.Host(name, ec2Connection=self.zoneconnections[zone].connection,  
+                                               domain = self.domain_name, domainPassword = self.domain_password, 
+                                               advertiseAlt = True, region = zone,
+                                               agentPort = agentPort, portRange = subPortRange,
+                                               isBroker = chef_data['nuodb']['is_broker'], ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile)
+        self.db['hosts'][name] = stub
+        return stub['host']
       else:
-        chef_data["nuodb"]['monitoring'] = {"enable": False, "alert_email": ""}
-      chef_data["nuodb"]['domain_name'] = self.domain_name
-      chef_data["nuodb"]['domain_password'] = self.domain_password
-      chef_data["nuodb"]["start_services"] = True
-      if nuodb_rpm_url != None:
-        chef_data["nuodb"]["download_url"] = nuodb_rpm_url
-      stub['chef_data'] = chef_data
-      stub['ami'] = ami
-      stub['name'] = name
-      stub['region'] = zone
-      stub['security_group_ids'] = security_group_ids
-      stub['subnet'] = subnets[len(stub) % len(subnets)]
-      stub['host'] = nuodbawsquickstart.aws.Host(name, ec2Connection=self.zones[zone].connection,  
-                                             domain = self.domain_name, domainPassword = self.domain_password, 
-                                             advertiseAlt = True, region = zone,
-                                             agentPort = agentPort, portRange = subPortRange,
-                                             isBroker = chef_data['nuodb']['is_broker'], ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile)
-      self.db['hosts'][host_id] = stub
-      return stub['host']
+        return self.db['hosts'][name]
 
     def __boot_host(self, host_id, zone, instance_type = None, wait_for_health = False, ebs_optimized = False):
       if instance_type == None:
@@ -92,6 +98,11 @@ class Cluster:
       userdata = template.substitute(template_vars)
       obj = stub['host'].create(ami=stub['ami'], instance_type=instance_type, security_group_ids=stub['security_group_ids'], subnet = stub['subnet'], getPublicAddress = True, userdata = userdata, ebs_optimized=ebs_optimized)
       print ("Waiting for %s to start" % obj.name),
+      while obj.status() != "running":
+        print("."),
+        time.sleep(5) #Wait 30 seconds in between node starts
+      print
+      obj.update_data()
       if wait_for_health:
         healthy = False
         count = 0
@@ -115,9 +126,9 @@ class Cluster:
       return obj
              
     def connect_zone(self, zone):
-      self.zones[zone] = nuodbawsquickstart.aws.Zone(zone)
-      self.zones[zone].connect(aws_access_key=self.aws_access_key, aws_secret=self.aws_secret)
-      return self.zones[zone]
+      self.zoneconnections[zone] = nuodbawsquickstart.aws.Zone(zone)
+      self.zoneconnections[zone].connect(aws_access_key=self.aws_access_key, aws_secret=self.aws_secret)
+      return self.zoneconnections[zone]
         
     def create_cluster(self, ebs_optimized = False):
       chosen_one = None
@@ -146,7 +157,7 @@ class Cluster:
     
     def delete_dns(self, zone = None):
       if zone == None:
-        zones = self.get_zones()
+        zones = self.get_zoneconnections()
       else:
         zones = [zone]
       for zone in zones:
@@ -164,35 +175,42 @@ class Cluster:
       else:
         raise Error("No host found with id of '%s'" % host_id)
     
+    def get_host_address(self, host_id):
+      return self.db['hosts'][host_id]['host'].instance.public_dns_name
+    
+    def get_hosts(self):
+      return self.db['hosts']
+    
     def get_existing_hosts(self, zone=None):
-      hosts = []
+      hosts = {}
       if zone == None:
-        for myzone in self.get_zones():
-          for reservation in self.zones[myzone].connection.get_all_reservations():
+        for myzone in self.get_zoneconnections():
+          for reservation in self.zoneconnections[myzone].connection.get_all_reservations():
             for instance in reservation.instances:
               if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-                myhost = {'host': nuodbawsquickstart.aws.Host("", ec2Connection=self.zones[myzone].connection,  
+                myhost = {'host': nuodbawsquickstart.aws.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
                                              domain = self.domain_name, domainPassword = self.domain_password, 
                                              instance_id = instance.id,
                                              ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile) }
-                hosts.append(myhost)
+                hosts[myhost['host'].instance.tags['Name']] = myhost
       else:
-        for reservation in self.zones[zone].connection.get_all_reservations():
+        for reservation in self.zoneconnections[zone].connection.get_all_reservations():
           for instance in reservation.instances:
             if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-              myhost = {'host': nuodbawsquickstart.aws.Host("", ec2Connection=self.zones[myzone].connection,  
+              myhost = {'host': nuodbawsquickstart.aws.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
                                            domain = self.domain_name, domainPassword = self.domain_password, 
                                            instance_id = instance.id,
                                            ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile) }
-              hosts.append(myhost)
+              hosts[myhost['host'].instance.tags['Name']] = myhost
       return hosts
     
-    def get_zones(self):
-      return sorted(self.zones)
+    def get_zoneconnections(self):
+      return sorted(self.zoneconnections)
       
     def terminate_hosts(self, zone = None):
-      for host in self.get_existing_hosts(zone):
-        host_obj = host['host']
+      hosts = self.get_existing_hosts(zone)
+      for host in hosts:
+        host_obj = hosts[host]['host']
         if host_obj.exists and host_obj.instance._state.code == 16:
           print "Terminating %s" % host_obj.name
           host_obj.terminate()
