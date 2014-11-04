@@ -180,17 +180,13 @@ class Cluster:
           for reservation in self.zoneconnections[myzone].connection.get_all_reservations():
             for instance in reservation.instances:
               if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-                myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,
-                                             instance_id = instance.id,
-                                             ssh_key = self.ssh_key) }
+                myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection, instance_id = instance.id) }
                 hosts[myhost['host'].instance.tags['Name']] = myhost
       else:
         for reservation in self.zoneconnections[zone].connection.get_all_reservations():
           for instance in reservation.instances:
             if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-              myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,   
-                                           instance_id = instance.id,
-                                           ssh_key = self.ssh_key) }
+              myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection, instance_id = instance.id) }
               hosts[myhost['host'].instance.tags['Name']] = myhost
       return hosts
     
@@ -202,7 +198,7 @@ class Cluster:
       for host in hosts:
         host_obj = hosts[host]['host']
         if host_obj.exists and host_obj.instance._state.code == 16:
-          print "Terminating %s" % host_obj.name
+          print "Terminating %s in %s" % (host_obj.name, host_obj.instance.region.name)
           host_obj.terminate()
      
 class Error(Exception):

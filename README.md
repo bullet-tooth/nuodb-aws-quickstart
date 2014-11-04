@@ -9,13 +9,10 @@ Scripts to start a multi-region NuoDB cluster in Amazon Web Services
 #### Prerequisites
   * OSX
     * [Installation instructions can be found here](http://doc.nuodb.com/display/doc/Installing+nuodbTools+on+OSX)
-  * Fedora
+  * Fedora, CentOS, RHEL
     * `sudo yum -y install gcc git python-devel python-pip`
   * Ubuntu
     * `sudo apt-get install gcc git python-dev python-pip`
-  * CentOS & RHEL
-    * At this writing CentOS & RHEL do not ship with Python 2.7 support. There are a number of [solutions on Google](https://www.google.com/search?btnG=1&pws=0&q=installing+python+2.7+on+centos). After python2.7 is installed then:
-    * `sudo yum -y install gcc git python-devel python-pip`
 
 ### Preparation:
   * Amazon has (as of this writing) 9 different regions. You should determine which regions you wish to use for your cluster. A single region is sufficient, but for georedundancy you may want to run in more than one region simultaneously.

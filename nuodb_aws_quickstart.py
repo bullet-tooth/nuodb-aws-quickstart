@@ -67,13 +67,16 @@ def get_instance_type(c):
   # Deny choice for now
   return "m3.xlarge"
   
+def get_regions(c):
+  regions = []
+  for region in nuodbawsquickstart.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"]).get_all_regions():
+    regions.append(region.name)
+  return regions
+  
 def get_zone_info(c):
   # Find our how many regions
   r = {}
-  
-  # open a Boto connection to get metadata
-  aws_conn = nuodbawsquickstart.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"])
-  available_zones = aws_conn.get_all_regions()
+  available_zones = get_regions(c)
   zonecount = len(available_zones)
   zone_count_prompt = user_prompt("How many AWS regions? (1-%i)? " % zonecount, range(1,zonecount + 1))
   if zone_count_prompt == str(zonecount):
@@ -83,8 +86,7 @@ def get_zone_info(c):
     i = 0
     while i < int(zone_count_prompt):
       regionlist = []
-      for zone_obj in available_zones:
-        zone = zone_obj.name
+      for zone in available_zones:
         if zone not in r:
           regionlist.append(zone)
       get = int(choose_from_list(sorted(regionlist)))
@@ -181,14 +183,15 @@ def help():
   
 def __main__(action = None):
   config_file = "./config.json"
-  params = {
+  
+  if action == "create":
+    params = {
             "cluster_name": { "default" : "NuoDBQuickstart", "prompt" : "What is the name of your cluster?"},
             "aws_access_key": {"default" : "", "prompt" : "What is your AWS access key?"},
             "aws_secret": {"default" : "", "prompt" : "What is your AWS secret?"},
             "domain_password": {"default": "bird", "prompt": "What is the admin password of your NuoDB domain?"},
             "alert_email" : {"default" : "","prompt" : "What email address would you like health alerts sent to?"},
           }
-  if action == "create":
     #### Gather all the data we need
     c = {}
     if os.path.exists(config_file):
@@ -285,17 +288,31 @@ def __main__(action = None):
       with open(config_file) as f:
         c = json.loads(f.read())
         f.close()
-      mycluster =  nuodbawsquickstart.Cluster(
-                                             alert_email = c['alert_email'], ssh_key = c['ssh_key'], ssh_keyfile = c['ssh_keyfile'],
-                                             aws_access_key = c['aws_access_key'], aws_secret = c['aws_secret'], 
-                                             cluster_name = c['cluster_name'], domain_name = c['domain_name'],
-                                             domain_password = c['domain_password'], instance_type = c['instance_type'])
-      for zone in c['zones']:
-        mycluster.connect_zone(zone)
-      mycluster.terminate_hosts()
     else:
-      print "Can't find a previous config file %s to auto-terminate. If you can't find the file then you will have to destroy the cluster by hand." % config_file
-      exit(2)
+      params = {
+            "cluster_name": { "default" : "NuoDBQuickstart", "prompt" : "What is the name of your cluster?"},
+            "aws_access_key": {"default" : "", "prompt" : "What is your AWS access key?"},
+            "aws_secret": {"default" : "", "prompt" : "What is your AWS secret?"},
+          }
+      for key in sorted(params.keys()):
+      #if len(str(params[key]['default'])) > 30:
+      #  default = str(params[key]['default'])[0:27] + "..."
+      #else:
+        default = str(params[key]['default'])
+        val = raw_input("%s [%s] " % (params[key]['prompt'], default))
+        if len(val) == 0:
+          c[key] = params[key]['default']
+        else:
+          c[key] = val
+      
+    mycluster =  nuodbawsquickstart.Cluster(
+                                           alert_email = "",
+                                           aws_access_key = c['aws_access_key'], aws_secret = c['aws_secret'], 
+                                           cluster_name = c['cluster_name'], domain_name = "",
+                                           domain_password = "", instance_type = "")
+    for zone in get_regions(c):
+      mycluster.connect_zone(zone)
+    mycluster.terminate_hosts()
   else:
     help()
 
