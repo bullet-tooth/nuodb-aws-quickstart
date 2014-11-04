@@ -179,13 +179,13 @@ class Cluster:
         for myzone in self.get_zoneconnections():
           for reservation in self.zoneconnections[myzone].connection.get_all_reservations():
             for instance in reservation.instances:
-              if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
+              if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name and instance._state.code == 16:
                 myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection, instance_id = instance.id) }
                 hosts[myhost['host'].instance.tags['Name']] = myhost
       else:
         for reservation in self.zoneconnections[zone].connection.get_all_reservations():
           for instance in reservation.instances:
-            if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
+            if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name and instance._state.code == 16:
               myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection, instance_id = instance.id) }
               hosts[myhost['host'].instance.tags['Name']] = myhost
       return hosts
@@ -195,8 +195,9 @@ class Cluster:
       
     def terminate_hosts(self, zone = None):
       hosts = self.get_existing_hosts(zone)
-      for host in hosts:
+      for host in hosts:      
         host_obj = hosts[host]['host']
+        print "%s %s (%i): %s" % (host_obj.instance.tags['Name'], host_obj.instance.id, host_obj.instance._state.code, json.dumps(host_obj.instance.tags))
         if host_obj.exists and host_obj.instance._state.code == 16:
           print "Terminating %s in %s" % (host_obj.name, host_obj.instance.region.name)
           host_obj.terminate()

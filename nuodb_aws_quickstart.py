@@ -105,7 +105,7 @@ def get_zone_info(c):
     keypairs = zone_conn.get_all_key_pairs()
     keynames = []
     if len(keypairs) == 0:
-      print "Cannot find any key pairs in region %s. PLease add a keypair to this region and then re-run this script." % region
+      print "Cannot find any key pairs in region %s. Please add a keypair to this region and then re-run this script." % region
       exit(2)
     for keypair in keypairs:
       keynames.append(keypair.name)
