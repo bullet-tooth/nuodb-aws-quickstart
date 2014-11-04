@@ -66,33 +66,22 @@ def choose_multiple_from_list(params = []):
 def get_instance_type(c):
   # Deny choice for now
   return "m3.xlarge"
-
-  instance_types = []
-  for offering in nuodbawsquickstart.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"]).get_spot_price_history():
-    if offering.instance_type not in instance_types and offering.instance_type[0] in ["m", "t", "r", "c"]:
-      instance_types.append(offering.instance_type)
-  instance_types = sorted(instance_types)
-  suggested = None
-  for idx, itype in enumerate(instance_types):
-    if itype == "m3.xlarge":
-      suggested = idx
-  result = choose_from_list(instance_types, suggested)
-  return instance_types[result]
-
   
 def get_zone_info(c):
   # Find our how many regions
   r = {}
-  zone_count = user_prompt("How many AWS regions? (1-7)? ", range(1,8))
+  
   # open a Boto connection to get metadata
   aws_conn = nuodbawsquickstart.Zone("us-east-1").connect(c["aws_access_key"], c["aws_secret"])
   available_zones = aws_conn.get_all_regions()
-  if zone_count == "7":
+  zonecount = len(available_zones)
+  zone_count_prompt = user_prompt("How many AWS regions? (1-%i)? " % zonecount, range(1,zonecount + 1))
+  if zone_count_prompt == str(zonecount):
     for zone in available_zones:
       r[zone] = {}
   else:
     i = 0
-    while i < int(zone_count):
+    while i < int(zone_count_prompt):
       regionlist = []
       for zone_obj in available_zones:
         zone = zone_obj.name
@@ -112,13 +101,14 @@ def get_zone_info(c):
     # Validate SSH Key
     
     keypairs = zone_conn.get_all_key_pairs()
-    key_exists = False
-    for keypair in keypairs:
-      if c['ssh_key'] == keypair.name:
-        key_exists = True
-    if not key_exists:
-      print "Key %s does not exist in region %s. Please fix this and rerun this script" % (c['ssh_key'], region)
+    keynames = []
+    if len(keypairs) == 0:
+      print "Cannot find any key pairs in region %s. PLease add a keypair to this region and then re-run this script." % region
       exit(2)
+    for keypair in keypairs:
+      keynames.append(keypair.name)
+    print region + " --- Choose a keypair:"
+    r[region]['keypair'] = keynames[choose_from_list(keynames)]
     
     # Choose AMI
     print
@@ -195,10 +185,7 @@ def __main__(action = None):
             "cluster_name": { "default" : "NuoDBQuickstart", "prompt" : "What is the name of your cluster?"},
             "aws_access_key": {"default" : "", "prompt" : "What is your AWS access key?"},
             "aws_secret": {"default" : "", "prompt" : "What is your AWS secret?"},
-            "domain_name": {"default": "domain", "prompt": "What is the name of your NuoDB domain?"},
             "domain_password": {"default": "bird", "prompt": "What is the admin password of your NuoDB domain?"},
-            "ssh_key": {"default": "", "prompt": "Enter your ssh keypair name that exists in all the regions you want to start instances:"},
-            "ssh_keyfile": {"default": "/home/USER/.ssh/id_rsa", "prompt": "Enter the location of the private key used for ssh. Please use the absolute path: "},
             "alert_email" : {"default" : "","prompt" : "What email address would you like health alerts sent to?"},
           }
   if action == "create":
@@ -225,48 +212,17 @@ def __main__(action = None):
         c[key] = params[key]['default']
       else:
         c[key] = val
-        
-    #### test for ssh key
-    if not os.path.exists(c['ssh_keyfile']):
-      print "Cannot find ssh private key %s. Please check and run again." % c['ssh_keyfile']
-      exit(2)
 
     #### Get Instance type
     if "instance_type" not in static_config:
       c['instance_type'] = get_instance_type(c)
     else:
-      res = user_prompt("Use the instance type of %s? (y/n) " % static_config['instance_type'], ["y", "n"])
-      if res != "y":
-        c['instance_type'] = get_instance_type(c)
-      else:
-        c['instance_type'] = static_config['instance_type']
-    
-    ### Populate zone data
-    if "zones" in static_config:
-      print "Found this zone info:"
-      for zone in sorted(static_config["zones"].keys()):
-        s = static_config["zones"][zone]
-        print "{:14}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
-      res = user_prompt("Use this configuration? (y/n) ", ["y", "n"])
-      if res == "y":
-        c['zones'] = static_config["zones"]
-      else:
-        while res != "y":
-          c["zones"] = get_zone_info(c)
-          for zone in sorted(c["zones"].keys()):
-            s = c["zones"][zone]
-            print "{:14}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
-          res = user_prompt("Use this configuration? (y/n) ", ["y", "n"])
-    else:
-      res = "n"
-      while res != "y":
-        c["zones"] = get_zone_info(c)
-        print "Here is your zone info:"
-        for zone in sorted(c["zones"].keys()):
-          s = c["zones"][zone]
-          print "{:14}    {:12}    {}    {}    {}".format(zone, s["ami"], str(s["servers"]) + " servers", ",".join(s["subnets"]), ",".join(s["security_group_ids"]))
-        res = user_prompt("Use this configuration? (y/n) ", ["y", "n"])
+      c['instance_type'] = static_config['instance_type']
       
+    c['domain_name'] = "domain"
+    c["zones"] = get_zone_info(c)
+      
+    print "Saving this information for later to %s" % config_file
     # Write out the config
     with open(config_file, 'wt') as f:
       f.write(json.dumps(c, indent=4, sort_keys=True))
@@ -276,7 +232,7 @@ def __main__(action = None):
     #######################################
     
     mycluster =  nuodbawsquickstart.Cluster(
-                                           alert_email = c['alert_email'], ssh_key = c['ssh_key'], ssh_keyfile = c['ssh_keyfile'],
+                                           alert_email = c['alert_email'],
                                            aws_access_key = c['aws_access_key'], aws_secret = c['aws_secret'], 
                                            cluster_name = c['cluster_name'], domain_name = c['domain_name'],
                                            domain_password = c['domain_password'], instance_type = c['instance_type'])
@@ -287,7 +243,7 @@ def __main__(action = None):
       z = c['zones'][zone]
       for i in range(0,z['servers']):
         root_name = "%s-%i" % (c['cluster_name'], count)
-        myserver = mycluster.add_host(name=root_name, zone=zone, ami=z['ami'], subnets=z['subnets'], security_group_ids = z['security_group_ids']) # Mark the number of nodes to be created
+        myserver = mycluster.add_host(name=root_name, zone=zone, ami=z['ami'], subnets=z['subnets'], security_group_ids = z['security_group_ids'], keypair = z['keypair']) # Mark the number of nodes to be created
         print "Added %s (%s)" % (root_name, myserver.region)
         count += 1
     
@@ -338,7 +294,7 @@ def __main__(action = None):
         mycluster.connect_zone(zone)
       mycluster.terminate_hosts()
     else:
-      print "Can't find a previous config file to auto-terminate. If you can't find the file then you will have to destroy the cluster by hand."
+      print "Can't find a previous config file %s to auto-terminate. If you can't find the file then you will have to destroy the cluster by hand." % config_file
       exit(2)
   else:
     help()

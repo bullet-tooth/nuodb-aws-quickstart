@@ -4,7 +4,7 @@ Created on Jan 28, 2014
 @author: rkourtz
 '''
 import nuodbawsquickstart
-import inspect, json, os, random, string, sys, time
+import inspect, json, os, random, socket, string, sys, time
 
 class Cluster:
     
@@ -18,23 +18,17 @@ class Cluster:
                  domain_password="bird", 
                  enable_monitoring = True,
                  instance_type = "m3.xlarge",  
-                 ssh_key = "", 
-                 ssh_keyfile = None,
                  zones = []):
       args, _, _, values = inspect.getargvalues(inspect.currentframe())
       for i in args:
         setattr(self, i, values[i])
-        
-      if ssh_keyfile != None and ssh_keyfile != "":
-        if not os.path.exists(ssh_keyfile):
-          raise Error("Can not find ssh private key %s" % self.ssh_keyfile)
         
       self.zoneconnections = {} #store our zone connections
       for zone in zones:
         self.connect_zone(zone)
       self.db = {"hosts": self.get_existing_hosts()}
     
-    def add_host(self, name, zone, ami = "", security_group_ids=[], subnets = [], agentPort = 48004 , subPortRange = 48005, nuodb_rpm_url = None, start_services = True):
+    def add_host(self, name, zone, ami = "", security_group_ids=[], subnets = [], agentPort = 48004 , subPortRange = 48005, nuodb_rpm_url = None, start_services = True, keypair = None):
       if name not in self.db['hosts']:
         stub= {}
         host_id = len(self.db['hosts'])
@@ -73,10 +67,7 @@ class Cluster:
         stub['security_group_ids'] = security_group_ids
         stub['subnet'] = subnets[len(stub) % len(subnets)]
         stub['host'] = nuodbawsquickstart.Host(name, ec2Connection=self.zoneconnections[zone].connection,  
-                                               domain = self.domain_name, domainPassword = self.domain_password, 
-                                               advertiseAlt = True, region = zone,
-                                               agentPort = agentPort, portRange = subPortRange,
-                                               isBroker = chef_data['nuodb']['is_broker'], ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile)
+                                                region = zone, ssh_key = keypair)
         self.db['hosts'][name] = stub
         return stub['host']
       else:
@@ -109,19 +100,21 @@ class Cluster:
         wait = 10
         print "Waiting for agent on %s (%s)" % (obj.name, obj.ext_ip)
         while not healthy or count == tries:
-          if obj.agent_running():
-            healthy = True
-          else:
+          try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((obj.ext_ip, 48004))
+            s.close()
+          except:
             print("."),
             time.sleep(wait)
+          else:
+            healthy = True
           count += 1
         if not healthy:
           print "Cannot reach agent on %s after %s seconds. Check firewalls and the host for errors." % (obj.name, str(tries * wait))
           exit(1)
         print
         obj.update_data()
-      else:
-        print "Not waiting for agent on %s, node will come up asynchronously." % obj.name
       return obj
              
     def connect_zone(self, zone):
@@ -187,19 +180,17 @@ class Cluster:
           for reservation in self.zoneconnections[myzone].connection.get_all_reservations():
             for instance in reservation.instances:
               if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-                myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
-                                             domain = self.domain_name, domainPassword = self.domain_password, 
+                myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,
                                              instance_id = instance.id,
-                                             ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile) }
+                                             ssh_key = self.ssh_key) }
                 hosts[myhost['host'].instance.tags['Name']] = myhost
       else:
         for reservation in self.zoneconnections[zone].connection.get_all_reservations():
           for instance in reservation.instances:
             if hasattr(instance, 'tags') and "nuodbawsquickstart" in instance.tags and instance.tags['nuodbawsquickstart'] == self.cluster_name:
-              myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,  
-                                           domain = self.domain_name, domainPassword = self.domain_password, 
+              myhost = {'host': nuodbawsquickstart.Host("", ec2Connection=self.zoneconnections[myzone].connection,   
                                            instance_id = instance.id,
-                                           ssh_key = self.ssh_key, ssh_keyfile = self.ssh_keyfile) }
+                                           ssh_key = self.ssh_key) }
               hosts[myhost['host'].instance.tags['Name']] = myhost
       return hosts
     
