@@ -113,7 +113,6 @@ def get_zone_info(c):
     r[region]['keypair'] = keynames[choose_from_list(keynames)]
     
     # Choose AMI
-    print
     print region + " --- Determining AMIs (Loading...) "
     amis = zone_obj.amis
     ami_dict = {}
@@ -146,7 +145,6 @@ def get_zone_info(c):
         r[region]["ami"] =  ami_dict[ami_descriptions[ami_choice]]['id']
     
     #What subnets to use?
-    print
     print region + " --- Finding subnets... "
     subnets = zone_obj.get_subnets()
     for subnet in subnets:
@@ -277,8 +275,15 @@ def __main__(action = None):
     if not healthy:
       print "Gave up trying after %s seconds. Check the server" % str(wait)
     else:
-      print "You can now access the console at %s " % str(good_host)
-      print "Other nodes may still be booting and will join the cluster eventually."
+      print
+      print "########################################################################################"
+      print "You can now access the NuoDB Admin Center"
+      print "(%s)" % str(good_host)
+      print "where you'll find documentation, samples and demos (check out Storefront!)"
+      print "and the Automation Console (create and managed databases)."
+      print "Other instances in the cluster may still be booting and will join the cluster over time."
+      print "########################################################################################"
+      print
     
   ########################
   #### Terminate a cluster

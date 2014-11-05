@@ -14,8 +14,10 @@ class Zone:
       # Test out our credentials
       try:
         self.connection.get_all_key_pairs()
-      except:
-        print "Unable to connect to AWS zone %s with credentials provided. Please check the credentials and try again." % self.name
+      except Exception as e:
+        print "ERROR: Unable to connect to AWS zone %s with credentials provided. Please check the credentials and try again." % self.name
+        print "Here is the response from EC2:"
+        print e
         exit(2)
       return self.connection
       
