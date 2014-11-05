@@ -8,7 +8,8 @@ Scripts to start a multi-region NuoDB cluster in Amazon Web Services
 
 #### Prerequisites
   * OSX
-    * [Installation instructions can be found here](http://doc.nuodb.com/display/doc/Installing+nuodbTools+on+OSX)
+    * Install XCode (App Store -> xcode)
+    * Install Python's [setuptools](https://pypi.python.org/pypi/setuptools#unix-including-mac-os-x-curl) (Terminal -> `curl https://bootstrap.pypa.io/ez_setup.py -o - | sudo python`)
   * Fedora, CentOS, RHEL
     * `sudo yum -y install gcc git python-devel python-pip`
   * Ubuntu
@@ -23,8 +24,8 @@ Scripts to start a multi-region NuoDB cluster in Amazon Web Services
   * AWS credentials
     * You should know your AWS access key and AWS secret key. They can be generated from the AWS [IAM](https://console.aws.amazon.com/iam/home?region=us-east-1#users) module 
   
-#### Execution
-* `git clone` this repository to your local machine
+#### Installation & Execution
+* Download the latest [release](https://github.com/nuodb/aws-quickstart/releases) of this repository to your local machine and extract it.
 * In the directory you just created run
 `python setup.py install`
 * Run `nuodb_aws_quickstart.py`
