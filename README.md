@@ -16,15 +16,22 @@ Toolkit to start a multi-region NuoDB cluster in Amazon Web Services
     * `sudo apt-get install gcc git python-dev python-pip`
 
 #### What you need to know:
-  * AWS credentials
-    * You should know your AWS access key and AWS secret key. See the [AWS IAM](AWS_IAM.md) page for help on setting up your account in AWS.
-  * AWS Regions
-    * AWS offers multiple regions. You should determine which regions you wish to use for your cluster. A single region is sufficient, but for geo-distribution you'll want to configure more than one.
-    * You'll need to know the AWS region "code" for each region you'd like to use. See the list of AWS regions and their codes [here](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html).
-    * You should have a keypair that exists in each region. See the [AWS IAM](AWS_IAM.md) page for details.
-  * The script will confirm before creating a security zone in each region for you. This security zone will contain the following ports open to the world:
-    * 22 (SSH) - for you to SSH in after the instances have been started
-    * 8080, 8888, 9001, 48004-48020 (NuoDB ports)
+  * The script will prompt you for:
+    * Whether to create a new domain, or terminate an existing one
+    * The name of the cluster
+  * When creating a cluster, you'll need to provide:
+    * A password to use for the new NuoDB domain
+    * An email address to send error notifications. Provide a blank response if none desired.
+    * AWS credentials
+     * You should know your AWS access key and AWS secret key. See the [AWS IAM](AWS_IAM.md) page for help on setting up your account in AWS.
+    * AWS Regions
+     * AWS offers multiple regions. You should determine which regions you wish to use for your cluster. A single region is sufficient, but for geo-distribution you'll want to configure more than one.
+     * You'll need to know the AWS region "code" for each region you'd like to use. See the list of AWS regions and their codes [here](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html).
+     * You should have a keypair that exists in each region. See the [AWS IAM](AWS_IAM.md) page for details.
+    * The script will confirm before creating a security zone in each region for you. This security zone will contain the following ports open to the world:
+     * 22 (SSH) - for you to SSH in after the instances have been started
+     * 8080, 8888, 9001, 48004-48020 (NuoDB ports)
+
 
   
 #### Installation & Execution
