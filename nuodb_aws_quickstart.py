@@ -277,10 +277,10 @@ def __main__(action = None):
     else:
       print
       print "########################################################################################"
-      print "You can now access the NuoDB Admin Center"
-      print "(%s)" % str(good_host)
+      print "You can now access the NuoDB Admin Center (Username: domain Password: %s) at" % c['domain_password']
+      print str(good_host)
       print "where you'll find documentation, samples and demos (check out Storefront!)"
-      print "and the Automation Console (create and managed databases)."
+      print "and the Automation Console (create and manage databases)."
       print "Other instances in the cluster may still be booting and will join the cluster over time."
       print "########################################################################################"
       print
@@ -294,6 +294,7 @@ def __main__(action = None):
         c = json.loads(f.read())
         f.close()
     else:
+      c = {}
       params = {
             "cluster_name": { "default" : "NuoDBQuickstart", "prompt" : "What is the name of your cluster?"},
             "aws_access_key": {"default" : "", "prompt" : "What is your AWS access key?"},

@@ -197,7 +197,7 @@ class Cluster:
       hosts = self.get_existing_hosts(zone)
       for host in hosts:      
         host_obj = hosts[host]['host']
-        print "%s %s (%i): %s" % (host_obj.instance.tags['Name'], host_obj.instance.id, host_obj.instance._state.code, json.dumps(host_obj.instance.tags))
+        #print "%s %s (%i): %s" % (host_obj.instance.tags['Name'], host_obj.instance.id, host_obj.instance._state.code, json.dumps(host_obj.instance.tags))
         if host_obj.exists and host_obj.instance._state.code == 16:
           print "Terminating %s in %s" % (host_obj.name, host_obj.instance.region.name)
           host_obj.terminate()
