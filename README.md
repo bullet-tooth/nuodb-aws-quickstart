@@ -32,8 +32,6 @@ Toolkit to start a multi-region NuoDB cluster in Amazon Web Services
      * 22 (SSH) - for you to SSH in after the instances have been started
      * 8080, 8888, 9001, 48004-48020 (NuoDB ports)
 
-
-  
 #### Installation & Execution
 * Download the latest [release](https://github.com/nuodb/aws-quickstart/releases) of this repository to your local machine and extract it.
 * In the directory you just created run
@@ -42,3 +40,4 @@ Toolkit to start a multi-region NuoDB cluster in Amazon Web Services
 * Enter the data gathered in the "What you need to know" section above when prompted by the script
 * When the script completes you will have a running NuoDB domain in your AWS account. The script will provide you with a URL for the NuoDB Admin Center for the new domain so that you may start interacting with it immediately.
 * If you run into any issues check the [troubleshooting page](Troubleshooting.md)
+* When you are done with your cluster then run `nuodb_aws_quickstart.py` and select "terminate". This will find and shut down the instances in your account associated with this script.

@@ -11,7 +11,7 @@ import urllib2
 def user_prompt(prompt, valid_choices = [], default = None):
   if default != None:
     prompt = "%s [%s] " % (prompt, str(default))
-  val = raw_input(prompt)
+  val = raw_input(prompt).strip()
   if len(valid_choices) == 0:
     if default == None:
       return val
@@ -208,7 +208,7 @@ def __main__(action = None):
       #  default = str(params[key]['default'])[0:27] + "..."
       #else:
       default = str(params[key]['default'])
-      val = raw_input("%s [%s] " % (params[key]['prompt'], default))
+      val = raw_input("%s [%s] " % (params[key]['prompt'], default)).strip()
       if len(val) == 0:
         c[key] = params[key]['default']
       else:
@@ -305,7 +305,7 @@ def __main__(action = None):
       #  default = str(params[key]['default'])[0:27] + "..."
       #else:
         default = str(params[key]['default'])
-        val = raw_input("%s [%s] " % (params[key]['prompt'], default))
+        val = raw_input("%s [%s] " % (params[key]['prompt'], default)).strip()
         if len(val) == 0:
           c[key] = params[key]['default']
         else:
