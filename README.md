@@ -9,7 +9,7 @@ Toolkit to start a multi-region NuoDB cluster in Amazon Web Services
 #### Before you start
   * OSX
     * Install XCode (App Store -> xcode)
-    * Install Python's [setuptools](https://pypi.python.org/pypi/setuptools#unix-including-mac-os-x-curl) (Terminal -> `curl https://bootstrap.pypa.io/ez_setup.py -o - | sudo python`)
+    * Install Python's [setuptools](https://pypi.python.org/pypi/setuptools#unix-including-mac-os-x-curl)<br/>(Terminal -> `curl https://bootstrap.pypa.io/ez_setup.py -o - | sudo python`)
   * Fedora, CentOS, RHEL
     * `sudo yum -y install gcc git python-devel python-pip`
   * Ubuntu
@@ -35,9 +35,9 @@ Toolkit to start a multi-region NuoDB cluster in Amazon Web Services
 #### Installation & Execution
 * Download the latest [release](https://github.com/nuodb/aws-quickstart/releases) of this repository to your local machine and extract it.
 * In the directory you just created run
-`python setup.py install`
-* Run `nuodb_aws_quickstart.py`
-* Enter the data gathered in the "What you need to know" section above when prompted by the script
+`python setup.py install`. Depending on your environment you may have to add `sudo` to the beginning of the command.
+* Run `nuodb_aws_quickstart.py create`
+* Enter the data gathered in the "What you need to know" section above when prompted
 * When the script completes you will have a running NuoDB domain in your AWS account. The script will provide you with a URL for the NuoDB Admin Center for the new domain so that you may start interacting with it immediately.
 * If you run into any issues check the [troubleshooting page](Troubleshooting.md)
-* When you are done with your cluster then run `nuodb_aws_quickstart.py` and select "terminate". This will find and shut down the instances in your account associated with this script.
+* When you are done with your cluster then run `nuodb_aws_quickstart.py terminate`. This will find and shut down the instances in your account associated with this script.
