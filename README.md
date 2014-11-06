@@ -31,6 +31,7 @@ Toolkit to start a multi-region NuoDB cluster in Amazon Web Services
     * The script will confirm before creating a security zone in each region for you. This security zone will contain the following ports open to the world:
      * 22 (SSH) - for you to SSH in after the instances have been started
      * 8080, 8888, 9001, 48004-48020 (NuoDB ports)
+  * Your cluster will be created with [m3.xlarge](http://aws.amazon.com/ec2/instance-types/) instances. The latest instance pricing can be found [here](http://aws.amazon.com/ec2/pricing/)
 
 #### Installation & Execution
 * Download the latest [release](https://github.com/nuodb/aws-quickstart/releases) of this repository to your local machine and extract it.
