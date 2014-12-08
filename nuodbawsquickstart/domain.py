@@ -64,7 +64,7 @@ class Domain():
           processes.append(process)
       return processes
         
-    def rest_req(self, action="GET", path="", data=None, timeout=10):
+    def rest_req(self, action="GET", path="", data=None, timeout=10, tries=3):
       if path[0] == "/":
         path = path[1:len(path)]
       # Try each url we have, return if we get a hit, good or bad.
@@ -99,6 +99,10 @@ class Domain():
               return req.json()
             else:
               return {}
+          # We have a bug in the restsvc where the domain doesn't connect. Try those over again up to a maximum of 3 times.
+          elif tries > 0:
+            time.sleep(1)
+            return self.rest_req(action, path, data, timeout, tries=tries-1)
           else:
             d = {"content": req.content, "method": action, "url": url, "data": data, "headers": headers, "code": req.status_code}
             s = "Failed REST Request. DEBUG: %s" % json.dumps(d)

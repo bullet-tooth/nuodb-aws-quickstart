@@ -74,6 +74,7 @@ def get_regions(c):
   return regions
   
 def get_zone_info(c):
+  print c
   # Find our how many regions
   r = {}
   available_zones = get_regions(c)
@@ -146,20 +147,25 @@ def get_zone_info(c):
     
     #What subnets to use?
     print region + " --- Finding subnets... "
-    subnets = zone_obj.get_subnets()
-    for subnet in subnets:
-      if subnets[subnet]['state'] == "available" and subnets[subnet]['defaultForAz'] == "true":
-        r[region]['subnets'] = [subnets[subnet]['id']]
-        r[region]['vpcs'] = [subnets[subnet]['vpc_id']]
-    if len(r[region]['subnets'])== 0:
-      print "ERROR: Could not determine default subnet in region %s, therefore cannot proceed. Contact AWS to recreate a default VPC and subnet." % region
-      exit()
+    if "subnets" in c['zones'][region] and len(c['zones'][region]['subnets']) > 0 and "vpcs" in c['zones'][region]:
+      r[region]['subnets'] = c['zones'][region]['subnets']
+      r[region]['vpcs'] = c['zones'][region]['vpcs']
+    else:
+      subnets = zone_obj.get_subnets()
+      r[region]['subnets'] = None
+      for subnet in subnets:
+        if subnets[subnet]['state'] == "available" and subnets[subnet]['defaultForAz'] == "true":
+          r[region]['subnets'] = [subnets[subnet]['id']]
+          r[region]['vpcs'] = [subnets[subnet]['vpc_id']]
+      if r[region]['subnets']==  None:
+        print "ERROR: Could not determine default subnet in region %s, therefore cannot proceed. Contact AWS to recreate a default VPC and subnet." % region
+        exit()
     
     #What security groups to use?
     r[region]['security_group_ids'] = []
     my_security_group = None
     for group in zone_obj.get_security_groups():
-      if group.name == "NuoDB_default_ports":
+      if group.name == "NuoDB_default_ports" and group.vpc_id in r[region]['vpcs']:
         my_security_group = group.id
     if my_security_group == None:
       res = user_prompt("I am going to create a security group in region %s. It would open the default NuoDB ports and SSH to all IPs. Is this OK? (y/n)" % region, ["y", "n"], "n")
@@ -221,7 +227,7 @@ def __main__(action = None):
       c['instance_type'] = static_config['instance_type']
       
     c['domain_name'] = "domain"
-    c["zones"] = get_zone_info(c)
+    c["zones"] = get_zone_info(static_config)
       
     print "Saving this information for later to %s" % config_file
     # Write out the config
