@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import nuodbawsquickstart
 import json
 import os
@@ -7,6 +8,9 @@ import sys
 import time
 import unicodedata
 import urllib2
+
+INSTANCE_TYPE = "m3.xlarge"
+NUODB_DOWNLOAD_URL = "http://download.nuohub.org/nuodb-%s.x86_64.rpm"
 
 def user_prompt(prompt, valid_choices = [], default = None):
   if default != None:
@@ -64,8 +68,7 @@ def choose_multiple_from_list(params = []):
             tally.append(idx)
 
 def get_instance_type(c):
-  # Deny choice for now
-  return "m3.xlarge"
+  return INSTANCE_TYPE
   
 def get_regions(c):
   regions = []
@@ -74,7 +77,6 @@ def get_regions(c):
   return regions
   
 def get_zone_info(c):
-  print c
   # Find our how many regions
   r = {}
   available_zones = get_regions(c)
@@ -147,7 +149,7 @@ def get_zone_info(c):
     
     #What subnets to use?
     print region + " --- Finding subnets... "
-    if "subnets" in c['zones'][region] and len(c['zones'][region]['subnets']) > 0 and "vpcs" in c['zones'][region]:
+    if region in c['zones'] and "subnets" in c['zones'][region] and len(c['zones'][region]['subnets']) > 0 and "vpcs" in c['zones'][region]:
       r[region]['subnets'] = c['zones'][region]['subnets']
       r[region]['vpcs'] = c['zones'][region]['vpcs']
     else:
@@ -184,11 +186,19 @@ def get_zone_info(c):
 def help():
   print "%s create" % sys.argv[0]
   print "%s terminate" % sys.argv[0]
+
+def validate_download(url):
+  try:
+    urllib2.urlopen(url)
+    return True
+  except:
+    return False
   
-def __main__(action = None):
+  
+def __main__(cmdargs = None):
   config_file = "./config.json"
   
-  if action == "create":
+  if cmdargs.action == "create":
     params = {
             "cluster_name": { "default" : "NuoDBQuickstart", "prompt" : "What is the name of your cluster?"},
             "aws_access_key": {"default" : "", "prompt" : "What is your AWS access key?"},
@@ -221,10 +231,19 @@ def __main__(action = None):
         c[key] = val
 
     #### Get Instance type
-    if "instance_type" not in static_config:
-      c['instance_type'] = get_instance_type(c)
+    if hasattr(cmdargs, "instancetype") and cmdargs.instancetype != "DEFAULT":
+      c['instance_type'] = cmdargs.instancetype
     else:
-      c['instance_type'] = static_config['instance_type']
+      c['instance_type'] = get_instance_type(c)
+      
+    if hasattr(cmdargs, "nuodbVersion") and cmdargs.nuodbVersion != "DEFAULT":
+      if validate_download(NUODB_DOWNLOAD_URL % cmdargs.nuodbVersion):
+        c['nuodb_version'] = cmdargs.nuodbVersion
+      else:
+        print "Can't find NuoDB version %s on the public download server. Please check the version and try again." % cmdargs.nuodbVersion
+        exit(2)  
+    else:
+      c['nuodb_version'] = None
       
     c['domain_name'] = "domain"
     c["zones"] = get_zone_info(static_config)
@@ -242,7 +261,8 @@ def __main__(action = None):
                                            alert_email = c['alert_email'],
                                            aws_access_key = c['aws_access_key'], aws_secret = c['aws_secret'], 
                                            cluster_name = c['cluster_name'], domain_name = c['domain_name'],
-                                           domain_password = c['domain_password'], instance_type = c['instance_type'])
+                                           domain_password = c['domain_password'], instance_type = c['instance_type'],
+                                           nuodbVersion = c['nuodb_version'])
     print "Creating the cluster."
     count = 0
     for zone in c['zones']:
@@ -294,7 +314,7 @@ def __main__(action = None):
   ########################
   #### Terminate a cluster
   ########################
-  elif action == "terminate":
+  elif cmdargs.action == "terminate":
     if os.path.exists(config_file):
       with open(config_file) as f:
         c = json.loads(f.read())
@@ -328,9 +348,13 @@ def __main__(action = None):
   else:
     help()
 
-args = sys.argv
-if len(args) < 2:
+program_license = ""
+parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
+parser.add_argument("--nuodbVersion", dest="nuodbVersion", help="Which version of NuoDB to use [default: %(default)s]", default="DEFAULT", required=False)
+parser.add_argument("--instancetype", dest="instancetype", help="Which type of AWS instance to use [default: %s]"  % INSTANCE_TYPE, default="DEFAULT", required=False)
+parser.add_argument("action", help="What action do you want to take on the cluster? (create/terminate)", nargs="?")
+args = parser.parse_args()
+if args.action not in ["create", "terminate"]:
   res = user_prompt("What action do you want to take on the cluster? (create/terminate): ", ["create", "terminate"])
-  __main__(action=res)
-else:
-  __main__(action=args[1])
+  args.action = res.strip()
+__main__(cmdargs = args)

@@ -17,7 +17,8 @@ class Cluster:
                  domain_name="domain", 
                  domain_password="bird", 
                  enable_monitoring = True,
-                 instance_type = "m3.xlarge",  
+                 instance_type = "m3.xlarge",
+                 nuodbVersion = None,  
                  zones = []):
       args, _, _, values = inspect.getargvalues(inspect.currentframe())
       for i in args:
@@ -60,6 +61,8 @@ class Cluster:
         chef_data["nuodb"]["start_services"] = True
         if nuodb_rpm_url != None:
           chef_data["nuodb"]["download_url"] = nuodb_rpm_url
+        if self.nuodbVersion != None:
+          chef_data["nuodb"]["version"] = self.nuodbVersion
         stub['chef_data'] = chef_data
         stub['ami'] = ami
         stub['name'] = name
