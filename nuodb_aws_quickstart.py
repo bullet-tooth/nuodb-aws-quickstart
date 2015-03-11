@@ -149,7 +149,7 @@ def get_zone_info(c):
     
     #What subnets to use?
     print region + " --- Finding subnets... "
-    if region in c['zones'] and "subnets" in c['zones'][region] and len(c['zones'][region]['subnets']) > 0 and "vpcs" in c['zones'][region]:
+    if 'zones' in region and region in c['zones'] and "subnets" in c['zones'][region] and len(c['zones'][region]['subnets']) > 0 and "vpcs" in c['zones'][region]:
       r[region]['subnets'] = c['zones'][region]['subnets']
       r[region]['vpcs'] = c['zones'][region]['vpcs']
     else:
@@ -246,7 +246,7 @@ def __main__(cmdargs = None):
       c['nuodb_version'] = None
       
     c['domain_name'] = "domain"
-    c["zones"] = get_zone_info(static_config)
+    c["zones"] = get_zone_info(c)
       
     print "Saving this information for later to %s" % config_file
     # Write out the config
