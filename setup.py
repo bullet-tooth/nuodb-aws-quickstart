@@ -2,7 +2,7 @@ from setuptools import setup
 import sys
 
 setup(name='nuodbawsquickstart',
-      version='1.0.1',
+      version='1.0.2',
       description='Script to deploy a multi-region and multi-instance AWS cluster',
       url='http://github.com/nuodb/nuodb-aws-quickstart',
       author='NuoDB Inc.',

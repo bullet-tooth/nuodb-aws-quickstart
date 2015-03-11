@@ -45,6 +45,13 @@ class Cluster:
           raise Error("ami '%s' is not valid" % (ami))
         #common Chef information
         chef_data = {"nuodb": {"is_broker": True, "enableSystemDatabase": True, "autoconsole": {"brokers": ["localhost"]}, "webconsole": {"brokers": ["localhost"]}}}
+        chef_data['java'] = {
+                             "install_flavor": "oracle",
+                             "jdk_version": "7",
+                             "oracle": {
+                                        "accept_oracle_download_terms" : True
+                                        }
+                             }
         chef_data["run_list"] = ["recipe[nuodb]"] 
         chef_data['nuodb']["port"] = agentPort
         chef_data['nuodb']["portRange"] = subPortRange
