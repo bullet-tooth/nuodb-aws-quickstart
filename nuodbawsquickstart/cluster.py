@@ -52,7 +52,6 @@ class Cluster:
                                         "accept_oracle_download_terms" : True
                                         }
                              }
-        chef_data['nuodb']['monitoring']['enable'] = True
         chef_data["run_list"] = ["recipe[nuodb]"] 
         chef_data['nuodb']["port"] = agentPort
         chef_data['nuodb']["portRange"] = subPortRange
