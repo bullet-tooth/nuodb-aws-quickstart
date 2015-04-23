@@ -106,6 +106,7 @@ class Cluster:
         count += 1
         time.sleep(wait)
       print
+      obj.instance.add_tag("nuodbawsquickstart", self.cluster_name)
       if obj.status() != "running":
         print "ERROR: The aws instance %s failed to start. This is most likely an AWS internal error."
         print "Please run \"%s terminate\" and then \"%s create\" again." % (sys.argv[0], sys.argv[0])
@@ -131,7 +132,7 @@ class Cluster:
         if not healthy:
           print "ERROR: Cannot reach agent on %s after %i seconds. Something may have gone wrong with the host."% (obj.name, tries * wait)
           print "Please run \"%s terminate\" and then \"%s create\" again." % (sys.argv[0], sys.argv[0])
-          print "If the problem continues please SSH to the host (ssh ec2-user@%s) and send the contents of /var/log/chef.log to support@nuodb.com" % obj.ext_ip
+          print "If the problem continues please SSH to the host (ssh ec2-user@%s) and send the contents of /var/log/chef.log and /var/log/nuodb/agent.log to support@nuodb.com" % obj.ext_ip
           exit(1)
         print
         obj.update_data()
@@ -155,12 +156,11 @@ class Cluster:
           wait_for_health = True
           chosen_one = self.__boot_host(host_id, zone, wait_for_health = wait_for_health, ebs_optimized = ebs_optimized)
           peers.append(chosen_one.instance.public_dns_name)
-          chosen_one.instance.add_tag("nuodbawsquickstart", self.cluster_name)
+          
         else:
           wait_for_health = False
           host['chef_data']['nuodb']['brokers'] = peers
           obj = self.__boot_host(host_id, zone, wait_for_health = wait_for_health, ebs_optimized = ebs_optimized)
-          obj.instance.add_tag("nuodbawsquickstart", self.cluster_name)
       
     def delete_db(self):
       self.exit()
