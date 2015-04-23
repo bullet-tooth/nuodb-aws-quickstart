@@ -12,6 +12,10 @@ import urllib2
 INSTANCE_TYPE = "m3.xlarge"
 NUODB_DOWNLOAD_URL = "http://download.nuohub.org/nuodb-%s.x86_64.rpm"
 
+def save_config(config, file):
+  with open(file, 'wt') as f:
+    f.write(json.dumps(config, indent=4, sort_keys=True))
+    
 def user_prompt(prompt, valid_choices = [], default = None):
   if default != None:
     prompt = "%s [%s] " % (prompt, str(default))
@@ -132,7 +136,7 @@ def get_zone_info(c):
     ami_descriptions.append("NONE OF THE ABOVE")
     chosen_ami = None
     for idx, desc in enumerate(ami_descriptions):
-      if "HVM EBS" in desc:
+      if "HVM GP2" in desc:
         chosen_ami =  ami_dict[desc]['id']
         suggested = idx
         r[region]["ami"] = chosen_ami
@@ -154,14 +158,20 @@ def get_zone_info(c):
       r[region]['vpcs'] = c['zones'][region]['vpcs']
     else:
       subnets = zone_obj.get_subnets()
+      possibilities = {}
       r[region]['subnets'] = None
       for subnet in subnets:
-        if subnets[subnet]['state'] == "available" and subnets[subnet]['defaultForAz'] == "true":
-          r[region]['subnets'] = [subnets[subnet]['id']]
-          r[region]['vpcs'] = [subnets[subnet]['vpc_id']]
+        if subnets[subnet]['state'] == "available":
+          possibilities[subnets[subnet]['id']] = subnets[subnet]
+          if subnets[subnet]['defaultForAz'] == "true":
+            r[region]['subnets'] = [subnets[subnet]['id']]
+            r[region]['vpcs'] = [subnets[subnet]['vpc_id']]
       if r[region]['subnets']==  None:
-        print "ERROR: Could not determine default subnet in region %s, therefore cannot proceed. Contact AWS to recreate a default VPC and subnet." % region
-        exit()
+        print "ERROR: Could not automatically determine default subnet in region %s. Please choose one:" % region
+        choice = choose_from_list(possibilities.keys())
+        id= possibilities.keys()[choice]
+        r[region]['subnets'] = [possibilities[id]['id']]
+        r[region]['vpcs'] = [possibilities[id]['vpc_id']]
     
     #What security groups to use?
     r[region]['security_group_ids'] = []
@@ -229,12 +239,14 @@ def __main__(cmdargs = None):
         c[key] = params[key]['default']
       else:
         c[key] = val
+      save_config(c, config_file)
 
     #### Get Instance type
     if hasattr(cmdargs, "instancetype") and cmdargs.instancetype != "DEFAULT":
       c['instance_type'] = cmdargs.instancetype
     else:
       c['instance_type'] = get_instance_type(c)
+    save_config(c, config_file)
       
     if hasattr(cmdargs, "nuodbVersion") and cmdargs.nuodbVersion != "DEFAULT":
       if validate_download(NUODB_DOWNLOAD_URL % cmdargs.nuodbVersion):
@@ -246,12 +258,12 @@ def __main__(cmdargs = None):
       c['nuodb_version'] = None
       
     c['domain_name'] = "domain"
+    save_config(c, config_file)
     c["zones"] = get_zone_info(c)
       
     print "Saving this information for later to %s" % config_file
-    # Write out the config
-    with open(config_file, 'wt') as f:
-      f.write(json.dumps(c, indent=4, sort_keys=True))
+    save_config(c, config_file)
+    
     
     #######################################
     #### Actually do some work

@@ -84,6 +84,8 @@ class Cluster:
         return self.db['hosts'][name]
 
     def __boot_host(self, host_id, zone, instance_type = None, wait_for_health = False, ebs_optimized = False):
+      tries = 30
+      wait = 10 
       if instance_type == None:
         instance_type = self.instance_type
       stub = self.db['hosts'][host_id]
@@ -97,31 +99,40 @@ class Cluster:
       f.close()
       userdata = template.substitute(template_vars)
       obj = stub['host'].create(ami=stub['ami'], instance_type=instance_type, security_group_ids=stub['security_group_ids'], subnet = stub['subnet'], getPublicAddress = True, userdata = userdata, ebs_optimized=ebs_optimized)
-      print ("Waiting for %s to start" % obj.name),
-      while obj.status() != "running":
+      print ("Waiting for %s to start" % obj.name)
+      count = 0
+      while obj.status() != "running" and count < tries:
         print("."),
-        time.sleep(5) #Wait 30 seconds in between node starts
+        count += 1
+        time.sleep(wait)
       print
+      obj.instance.add_tag("nuodbawsquickstart", self.cluster_name)
+      if obj.status() != "running":
+        print "ERROR: The aws instance %s failed to start. This is most likely an AWS internal error."
+        print "Please run \"%s terminate\" and then \"%s create\" again." % (sys.argv[0], sys.argv[0])
+        sys.exit(1)
       obj.update_data()
       if wait_for_health:
         healthy = False
         count = 0
-        tries = 60
-        wait = 10
         print "Waiting for agent on %s (%s)" % (obj.name, obj.ext_ip)
-        while not healthy or count == tries:
+        while not healthy and count < tries:
           try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2)
             s.connect((obj.ext_ip, 48004))
             s.close()
           except:
+            s.close()
             print("."),
+            count += 1
             time.sleep(wait)
           else:
             healthy = True
-          count += 1
         if not healthy:
-          print "Cannot reach agent on %s after %s seconds. Check firewalls and the host for errors." % (obj.name, str(tries * wait))
+          print "ERROR: Cannot reach agent on %s after %i seconds. Something may have gone wrong with the host."% (obj.name, tries * wait)
+          print "Please run \"%s terminate\" and then \"%s create\" again." % (sys.argv[0], sys.argv[0])
+          print "If the problem continues please SSH to the host (ssh ec2-user@%s) and send the contents of /var/log/chef.log and /var/log/nuodb/agent.log to support@nuodb.com" % obj.ext_ip
           exit(1)
         print
         obj.update_data()
@@ -145,12 +156,11 @@ class Cluster:
           wait_for_health = True
           chosen_one = self.__boot_host(host_id, zone, wait_for_health = wait_for_health, ebs_optimized = ebs_optimized)
           peers.append(chosen_one.instance.public_dns_name)
-          chosen_one.instance.add_tag("nuodbawsquickstart", self.cluster_name)
+          
         else:
           wait_for_health = False
           host['chef_data']['nuodb']['brokers'] = peers
           obj = self.__boot_host(host_id, zone, wait_for_health = wait_for_health, ebs_optimized = ebs_optimized)
-          obj.instance.add_tag("nuodbawsquickstart", self.cluster_name)
       
     def delete_db(self):
       self.exit()
@@ -181,7 +191,7 @@ class Cluster:
       return self.db['hosts'][host_id]['host'].instance.public_dns_name
     
     def get_hosts(self):
-      return self.db['hosts']
+      return sorted(self.db['hosts'])
     
     def get_existing_hosts(self, zone=None):
       hosts = {}

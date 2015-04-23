@@ -10,7 +10,7 @@ class Host:
                isBroker = False, 
                ssh_key = None, # Name of AWS Keypair
                region = "default",
-               web_console_port = "8080"):
+               web_console_port = "8888"):
     args, _, _, values = inspect.getargvalues(inspect.currentframe())
     for i in args:
       setattr(self, i, values[i])
