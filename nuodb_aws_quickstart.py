@@ -132,7 +132,7 @@ def get_zone_info(c):
     ami_descriptions.append("NONE OF THE ABOVE")
     chosen_ami = None
     for idx, desc in enumerate(ami_descriptions):
-      if "HVM EBS" in desc:
+      if "HVM GP2" in desc:
         chosen_ami =  ami_dict[desc]['id']
         suggested = idx
         r[region]["ami"] = chosen_ami
