@@ -38,10 +38,7 @@ class Cluster:
         if len(subnets) == 0:
           raise Error("You must specify the target subnets in an array")
         # make sure ami is valid
-        valid_amis = []
-        for each_ami in self.zoneconnections[zone].amis:
-          valid_amis.append(each_ami.id)
-        if ami not in valid_amis:
+        if not self.zoneconnections[zone].does_ami_exist(imageid=ami):
           raise Error("ami '%s' is not valid" % (ami))
         #common Chef information
         chef_data = {"nuodb": {"is_broker": True, "enableSystemDatabase": True, "autoconsole": {"brokers": ["localhost"]}, "webconsole": {"brokers": ["localhost"]}}}

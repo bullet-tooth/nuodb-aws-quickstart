@@ -65,6 +65,17 @@ class Zone:
         self.amis_cached = self.connection.get_all_images(owners=["self", "802164393885", "amazon"])
       return self.amis_cached
     
+    def does_ami_exist(self, imageid):
+      try:
+        image = self.connection.get_all_images(image_ids=[imageid])
+        if len(image) > 0:
+          return True
+      except boto.exception.EC2ResponseError:
+        return False
+      else:
+        return False
+        
+      
     def get_instance_types(self):
       return self.connection.get_all_instance_types()
     
