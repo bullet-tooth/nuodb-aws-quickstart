@@ -4,7 +4,6 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import nuodbawsquickstart
 import json
 import os
-import ssl
 import sys
 import time
 import unicodedata
@@ -81,7 +80,7 @@ def get_regions(c):
     regions.append(region.name)
   return regions
   
-def get_zone_info(c):
+def get_zone_info(c, useCustomAmi=False):
   # Find our how many regions
   r = {}
   available_zones = get_regions(c)
@@ -136,18 +135,24 @@ def get_zone_info(c):
     ami_descriptions = sorted(ami_dict.keys()) 
     ami_descriptions.append("NONE OF THE ABOVE")
     chosen_ami = None
-    for idx, desc in enumerate(ami_descriptions):
-      if "HVM GP2" in desc:
-        chosen_ami =  ami_dict[desc]['id']
-        suggested = idx
-        r[region]["ami"] = chosen_ami
+    if not useCustomAmi:
+      for idx, desc in enumerate(ami_descriptions):
+        if "HVM GP2" in desc:
+          chosen_ami =  ami_dict[desc]['id']
+          suggested = idx
+          r[region]["ami"] = chosen_ami
     if chosen_ami == None:
       ami_choice = choose_from_list(ami_descriptions, suggested)
       if ami_choice == len(ami_descriptions) - 1:
         print region + " --- Choose the AMI (Loading...) "
-        ami_enter = ""
-        while "ami-" not in ami_enter:
+        ami_enter = None
+        ami_chosen = False
+        while not ami_chosen:
           ami_enter = user_prompt("Enter the AMI you want to use (ami-xxxxxxxx): ")
+          if not zone_obj.does_ami_exist(imageid=ami_enter):
+            print "Invalid AMI"
+          else:
+            ami_chosen = True
         r[region]["ami"] = ami_enter
       else:
         r[region]["ami"] =  ami_dict[ami_descriptions[ami_choice]]['id']
@@ -260,7 +265,7 @@ def __main__(cmdargs = None):
       
     c['domain_name'] = "domain"
     save_config(c, config_file)
-    c["zones"] = get_zone_info(c)
+    c["zones"] = get_zone_info(c, useCustomAmi=cmdargs.usecustomami)
       
     print "Saving this information for later to %s" % config_file
     save_config(c, config_file)
@@ -361,13 +366,11 @@ def __main__(cmdargs = None):
   else:
     help()
 
-if hasattr(ssl, '_create_unverified_context'):
-  ssl._create_default_https_context = ssl._create_unverified_context
-  
 program_license = ""
 parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
 parser.add_argument("--nuodbVersion", dest="nuodbVersion", help="Which version of NuoDB to use [default: %(default)s]", default="DEFAULT", required=False)
 parser.add_argument("--instancetype", dest="instancetype", help="Which type of AWS instance to use [default: %s]"  % INSTANCE_TYPE, default="DEFAULT", required=False)
+parser.add_argument("--use-custom-ami", dest="usecustomami", action="store_true", help="Specify a custom AMI. (Only do this if you know what you are doing)", default=False, required=False)
 parser.add_argument("action", help="What action do you want to take on the cluster? (create/terminate)", nargs="?")
 args = parser.parse_args()
 if args.action not in ["create", "terminate"]:
