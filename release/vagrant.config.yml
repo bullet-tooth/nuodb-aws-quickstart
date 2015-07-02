@@ -1,0 +1,13 @@
+---
+#real 2m38.495s
+#basebox: "coreos-stable"
+#basebox_url: "http://stable.release.core-os.net/amd64-usr/current/coreos_production_vagrant.json"
+#real  3m6.587s
+basebox: "ubuntu-docker"
+basebox_url: "https://s3.amazonaws.com/nuodb-vagrant/ubuntu-14.10-docker16.box"
+# What local devices do you want mounted on the host? Format: [['/host/mount/point1', '/vm/mount/point/1'], ['/host/mount/point2', '/vm/mount/point2']]
+mounts: [] 
+nodes:
+  tarballBuild: 1
+memory_per_host_MB: 2048
+private_network: "192.168.50.10"

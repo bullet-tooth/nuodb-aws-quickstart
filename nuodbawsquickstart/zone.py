@@ -1,5 +1,6 @@
 import boto.ec2
 import boto.vpc
+import sys
 import traceback
 
 class Zone:
@@ -18,7 +19,7 @@ class Zone:
         print "ERROR: Unable to connect to AWS zone %s with credentials provided. Please check the credentials and try again." % self.name
         print "Here is the response from EC2:"
         print e
-        exit(2)
+        sys.exit(2)
       return self.connection
       
     def edit_security_group(self, name, description="EMPTY", rules=[], vpc_id = None):

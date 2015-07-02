@@ -5,6 +5,7 @@ Created on Jan 28, 2014
 '''
 import nuodbawsquickstart
 import inspect, json, os, random, socket, string, sys, time
+import urllib2
 
 class Cluster:
     
@@ -94,9 +95,10 @@ class Cluster:
                           chef_json = json.dumps(stub['chef_data']),
                           email_address = self.alert_email
                           )
-      f = open("/".join([os.path.dirname(os.path.abspath(inspect.stack()[0][1])), "templates", "init.py"]))
+      #f = open("/".join([os.path.dirname(os.path.abspath(inspect.stack()[0][1])), "templates", "init.py"]))
+      f = urllib2.urlopen("https://raw.githubusercontent.com/nuodb/nuodb-aws-quickstart/master/nuodbawsquickstart/templates/init.py")
       template = string.Template(f.read())
-      f.close()
+      #f.close()
       userdata = template.substitute(template_vars)
       obj = stub['host'].create(ami=stub['ami'], instance_type=instance_type, security_group_ids=stub['security_group_ids'], subnet = stub['subnet'], getPublicAddress = True, userdata = userdata, ebs_optimized=ebs_optimized)
       print ("Waiting for %s to start" % obj.name)
@@ -133,7 +135,7 @@ class Cluster:
           print "ERROR: Cannot reach agent on %s after %i seconds. Something may have gone wrong with the host."% (obj.name, tries * wait)
           print "Please run \"%s terminate\" and then \"%s create\" again." % (sys.argv[0], sys.argv[0])
           print "If the problem continues please SSH to the host (ssh ec2-user@%s) and send the contents of /var/log/chef.log and /var/log/nuodb/agent.log to support@nuodb.com" % obj.ext_ip
-          exit(1)
+          sys.exit(1)
         print
         obj.update_data()
       return obj

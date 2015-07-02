@@ -4,12 +4,13 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import nuodbawsquickstart
 import json
 import os
+import ssl
 import sys
 import time
 import unicodedata
 import urllib2
 
-INSTANCE_TYPE = "m3.xlarge"
+INSTANCE_TYPE = "m4.xlarge"
 NUODB_DOWNLOAD_URL = "http://download.nuohub.org/nuodb-%s.x86_64.rpm"
 
 def save_config(config, file):
@@ -113,7 +114,7 @@ def get_zone_info(c):
     keynames = []
     if len(keypairs) == 0:
       print "Cannot find any key pairs in region %s. Please add a keypair to this region and then re-run this script." % region
-      exit(2)
+      sys.exit(2)
     for keypair in keypairs:
       keynames.append(keypair.name)
     print region + " --- Choose a keypair:"
@@ -186,7 +187,7 @@ def get_zone_info(c):
         my_security_group = sg.id
       else:
         print "Cannot continue without a security group. Exiting."
-        exit()
+        sys.exit()
     r[region]['security_group_ids'] = [my_security_group]
 
   return r 
@@ -253,7 +254,7 @@ def __main__(cmdargs = None):
         c['nuodb_version'] = cmdargs.nuodbVersion
       else:
         print "Can't find NuoDB version %s on the public download server. Please check the version and try again." % cmdargs.nuodbVersion
-        exit(2)  
+        sys.exit(2)  
     else:
       c['nuodb_version'] = None
       
@@ -360,6 +361,9 @@ def __main__(cmdargs = None):
   else:
     help()
 
+if hasattr(ssl, '_create_unverified_context'):
+  ssl._create_default_https_context = ssl._create_unverified_context
+  
 program_license = ""
 parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
 parser.add_argument("--nuodbVersion", dest="nuodbVersion", help="Which version of NuoDB to use [default: %(default)s]", default="DEFAULT", required=False)

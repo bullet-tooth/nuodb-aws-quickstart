@@ -1,0 +1,103 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+require 'pp'
+require 'yaml'
+###
+# See vagrant.config for user editable fields
+###
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+myconfig = YAML.load(File.read(File.join(File.dirname(__FILE__), "vagrant.config.yml")))
+servers = Array.new
+route_commands = Array.new
+hosts_entries = Array.new
+subnets = myconfig['private_network'].split('.')
+myconfig['nodes'].each_key do |node_type|
+  (0..myconfig['nodes'][node_type]-1).each do |i|
+    server = Hash.new
+    server['vagrantname'] = [node_type, i].join()
+    server['hostname'] = [server['vagrantname'], ".vagrantup.com"].join()
+    server['docker_gateway'] = sprintf("172.17.%i.1/24", subnets[3])
+    server['ipaddress'] = subnets.join('.')
+    servers << server
+    route_commands << [server['hostname'], sprintf("route add -net 172.17.%i.0/24 gw %s", subnets[3], server['ipaddress'])]
+    hosts_entries << [server['ipaddress'], server['hostname']]
+    subnets[3] = subnets[3].to_i + 1
+  end
+end
+servers.each do |server|
+  server['route_commands'] = Array.new
+  route_commands.each do |command|
+    if command[0] != server['hostname']
+      server['route_commands'] << command[1]
+    end
+  end
+end
+
+#print servers
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = myconfig['basebox']
+  config.vm.box_url = myconfig['basebox_url']
+
+  config.ssh.insert_key = false
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
+
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", myconfig['memory_per_host_MB']]
+    if myconfig['basebox'].include?("coreos")
+      vb.check_guest_additions = false
+      vb.functional_vboxsf     = false
+      if Vagrant.has_plugin?("vagrant-vbguest") then
+        config.vbguest.auto_update = false
+      end
+    end
+    #   vb.gui = true
+  end
+  
+  servers.each do |server|
+    config.vm.define server['vagrantname'] do | client |
+      client.vm.hostname = server['hostname']
+      client.vm.network "private_network", ip: server['ipaddress']
+      if server.has_key?('port_start') and server.has_key?('port_end')
+        (server['port_start']..server['port_end']).each do |i|
+          client.vm.network "forwarded_port", guest: i, host: i
+        end
+      end 
+      
+      myconfig['mounts'].each do |mount|
+        client.vm.synced_folder mount[0], mount[1]
+      end
+
+      if config.vm.box.include?("ubuntu")
+        client.vm.provision "shell", inline: "sudo apt-get update"
+      end
+      client.vm.provision "shell", inline: "echo MODIFYING DOCKER INSTALL"
+      if myconfig['basebox'].include?("coreos")
+        # No vboxtools for coreos- mount via NFS
+        client.vm.synced_folder ".", "/vagrant", id: "core", :nfs => true, :mount_options => ['nolock,vers=3,udp']
+        client.vm.synced_folder "..", "/repo", id: "repo", :nfs => true, :mount_options => ['nolock,vers=3,udp']
+        client.vm.provision "shell", inline: "mkdir -p /etc/systemd/system/docker.service.d", :privileged => true
+        client.vm.provision "shell", inline: "echo [Service] > /etc/systemd/system/docker.service.d/50-bip.conf", :privileged => true
+        client.vm.provision "shell", inline: sprintf("echo Environment='DOCKER_OPT_BIP=\"--bip=%s\"' >> /etc/systemd/system/docker.service.d/50-bip.conf", server['docker_gateway']), :privileged => true
+        client.vm.provision "shell", inline: "systemctl daemon-reload", :privileged => true
+      else
+        client.vm.synced_folder "..", "/repo", id: "repo"
+        client.vm.provision "shell", inline: "if [ `ip a | grep -c 'global docker0'` -gt 0 ]; then ip addr del `ip a| grep 'global docker0' | awk '{print $2}'` dev docker0; fi"
+        client.vm.provision "shell", inline: sprintf("echo DOCKER_OPTS='--bip=%s' >> /etc/default/docker", server['docker_gateway'])
+        client.vm.provision "shell", inline: "service docker restart"
+      end
+      
+      # Populate route files
+      server['route_commands'].each do |command|
+        client.vm.provision "shell", inline: sprintf("echo Running %s", command)
+        client.vm.provision "shell", inline: command
+      end
+
+    end
+  end
+end
+
