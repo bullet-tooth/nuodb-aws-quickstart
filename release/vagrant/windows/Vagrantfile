@@ -1,0 +1,16 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "windows81"
+  config.vm.box_url = "./windows81.box"
+  config.vm.communicator = "winrm"
+
+  config.vm.synced_folder "../../..", "/repo"
+  config.vm.provider "virtualbox" do |v|
+    v.cpus = 2
+    v.memory = 2048
+    v.gui = true
+  end
+
+end

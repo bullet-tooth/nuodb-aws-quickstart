@@ -1,0 +1,16 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "osx-10.10"
+  config.vm.box_url = "osx-yosemite-0.2.0.box"
+  config.vm.provider "virtualbox" do |vb|
+    #vb.gui = true
+    vb.memory = "1024"
+    vb.check_guest_additions = false
+    vb.functional_vboxsf     = false
+  end
+  config.vm.synced_folder "../../..", "/repo", type: "rsync", rsync__exclude: [".git/", ".vagrant*", "build/", "dist/"]
+  config.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__exclude: [".git/", ".vagrant*"]
+  config.vm.provision "shell", inline: "/vagrant/setup.sh"
+end
