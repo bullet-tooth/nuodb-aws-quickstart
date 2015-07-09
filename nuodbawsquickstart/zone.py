@@ -1,5 +1,6 @@
 import boto.ec2
 import boto.vpc
+import sys
 import traceback
 
 class Zone:
@@ -18,7 +19,7 @@ class Zone:
         print "ERROR: Unable to connect to AWS zone %s with credentials provided. Please check the credentials and try again." % self.name
         print "Here is the response from EC2:"
         print e
-        exit(2)
+        sys.exit(2)
       return self.connection
       
     def edit_security_group(self, name, description="EMPTY", rules=[], vpc_id = None):
@@ -65,6 +66,17 @@ class Zone:
         self.amis_cached = self.connection.get_all_images(owners=["self", "802164393885", "amazon"])
       return self.amis_cached
     
+    def does_ami_exist(self, imageid):
+      try:
+        image = self.connection.get_all_images(image_ids=[imageid])
+        if len(image) > 0:
+          return True
+      except boto.exception.EC2ResponseError:
+        return False
+      else:
+        return False
+        
+      
     def get_instance_types(self):
       return self.connection.get_all_instance_types()
     

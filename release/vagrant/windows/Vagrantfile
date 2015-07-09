@@ -1,0 +1,17 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "windows81"
+  config.vm.box_url = "http://warmspare.hurley.nuodb.com/Vagrant/windows8.1/windows81.box"
+  config.vm.communicator = "winrm"
+
+  config.vm.synced_folder "../../..", "/repo"
+  config.vm.network "forwarded_port", host: 3389, guest: 3389
+  
+  config.vm.provider "virtualbox" do |v|
+    v.cpus = 2
+    v.memory = 2048
+    #v.gui = true
+  end
+end

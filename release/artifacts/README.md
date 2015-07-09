@@ -1,0 +1,1 @@
+This is the directory that will hold the artifacts built by the create_release.sh script
