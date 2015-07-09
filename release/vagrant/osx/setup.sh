@@ -26,6 +26,5 @@ datas = [
   (os.path.join(os.path.dirname(boto.__file__), 'cacerts', 'cacerts.txt'), os.path.join('boto', 'cacerts')),
 ]
 " > /Library/Python/2.7/site-packages/PyInstaller/hooks/hook-boto.py
-chmod 777 /repo/tmp/NuoDBAWSQuickstart
 # Pyinstaller won't run as root
 sudo -u ${USER} /vagrant/build.sh

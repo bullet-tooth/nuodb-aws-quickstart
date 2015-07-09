@@ -1,1 +1,0 @@
-Do a post script that pulls the artifact back into the temp dir

@@ -3,7 +3,7 @@
 
 Vagrant.configure(2) do |config|
   config.vm.box = "osx-10.10"
-  config.vm.box_url = "osx-yosemite-0.2.0.box"
+  config.vm.box_url = "http://warmspare.hurley.nuodb.com/Vagrant/osx/osx-yosemite-0.2.0.box"
   config.vm.provider "virtualbox" do |vb|
     #vb.gui = true
     vb.memory = "1024"

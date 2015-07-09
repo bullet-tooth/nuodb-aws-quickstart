@@ -1,8 +1,10 @@
 #!/usr/bin/bash
 set -e
 
+source /cygdrive/c/repo/release/env.sh
+
 echo "BUILDING ARTIFACT"
-DISTDIR='C:\\repo\\tmp\\NuoDBAWSQuickstart\\Windows'
+DISTDIR='C:\\repo\\release\\artifacts\\'${PROJECT}'\\Windows\\'${PROJECT}
 mkdir -p $DISTDIR
 
 cd ${HOME}

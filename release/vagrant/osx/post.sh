@@ -1,7 +1,11 @@
-DEBUG=0
-project="NuoDBAWSQuickstart"
+#!/bin/bash
+set -e
 
-targetDir="$(pwd)/../../../tmp/${project}/"
+
+DEBUG=0
+source "$(pwd)/../../env.sh"
+
+targetDir="$(pwd)/../../artifacts/${PROJECT}/"
 
 echo "##### Copying OSX artifacts into $targetDir"
 
@@ -19,5 +23,4 @@ do
     item_is_key=1
   fi
 done
-
-scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P ${Port} -i ${IdentityFile} ${User}@${HostName}:/repo/tmp/${project}/* $targetDir
+rsync -av -e "ssh -p ${Port} -i ${IdentityFile} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" ${User}@${HostName}:/tmp/${PROJECT}/* $targetDir
