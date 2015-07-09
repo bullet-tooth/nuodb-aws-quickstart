@@ -1,0 +1,3 @@
+To create a new set of artifacts from the current code run ```create_release.sh``` and specify the platforms you would like to build. This script uses [Vagrant](http://vagrantup.com) to create the build machines. The script will tell you the location of the artifacts that have been built once it completes.
+
+NOTE: If this is your first time building it will try to fetch the Vagrant OS images from an internal NuoDB server that is not externally accessible. After the first run the image versions will be cached on your system, but if you do not have access to the internal NuoDB resources the first time this script will fail.
