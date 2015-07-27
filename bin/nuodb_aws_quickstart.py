@@ -371,6 +371,7 @@ parser = ArgumentParser(description=program_license, formatter_class=RawDescript
 parser.add_argument("--nuodbVersion", dest="nuodbVersion", help="Which version of NuoDB to use [default: %(default)s]", default="DEFAULT", required=False)
 parser.add_argument("--instancetype", dest="instancetype", help="Which type of AWS instance to use [default: %s]"  % INSTANCE_TYPE, default="DEFAULT", required=False)
 parser.add_argument("--use-custom-ami", dest="usecustomami", action="store_true", help="Specify a custom AMI. (Only do this if you know what you are doing)", default=False, required=False)
+parser.add_argument("--peer", dest="peer", help="What your custom peer is", default=None, required=False)
 parser.add_argument("action", help="What action do you want to take on the cluster? (create/terminate)", nargs="?")
 args = parser.parse_args()
 if args.action not in ["create", "terminate"]:

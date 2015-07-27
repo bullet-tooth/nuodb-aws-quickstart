@@ -142,12 +142,15 @@ class Cluster:
       self.zoneconnections[zone].connect(aws_access_key=self.aws_access_key, aws_secret=self.aws_secret)
       return self.zoneconnections[zone]
         
-    def create_cluster(self, ebs_optimized = False):
+    def create_cluster(self, ebs_optimized = False, peer= None):
       chosen_one = None
       peers = []
       for host_id in self.db['hosts']:
         host = self.get_host(host_id)
-        host['chef_data']['nuodb']['brokers'] = peers
+        if peer != None:
+          host['chef_data']['nuodb']['brokers'] = peers
+        else:
+          host['chef_data']['nuodb']['brokers'] = [peer]
         obj = host['host']
         zone = obj.region
         if chosen_one == None:
