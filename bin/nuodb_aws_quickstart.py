@@ -293,7 +293,7 @@ def __main__(cmdargs = None):
         count += 1
     
     print "Booting the cluster"
-    mycluster.create_cluster() # Actually spins up the nodes.
+    mycluster.create_cluster(peer=args.peer) # Actually spins up the nodes.
     hosts = mycluster.get_hosts()
     
     print("Waiting for an available web console")
