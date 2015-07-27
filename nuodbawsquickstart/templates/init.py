@@ -4,7 +4,7 @@ import json, os, time, urllib2
 
 print "Starting cloud-init from userdata"
 
-packages = ["git","mailx"]
+packages = ["git","mailx", "emacs"]
 
 commands = [
             #"hostname $hostname",
