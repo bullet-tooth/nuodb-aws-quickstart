@@ -149,8 +149,10 @@ class Cluster:
         host = self.get_host(host_id)
         if peer != None:
           host['chef_data']['nuodb']['peer'] = peer
+        elif len(peers) == 0:
+          host['chef_data']['nuodb']['peer'] = ""
         else:
-          host['chef_data']['nuodb']['peer'] = peer
+          host['chef_data']['nuodb']['peer'] = peers[0]
         obj = host['host']
         zone = obj.region
         if chosen_one == None:
@@ -161,8 +163,8 @@ class Cluster:
           
         else:
           wait_for_health = False
-          host['chef_data']['nuodb']['peer'] = peer
           obj = self.__boot_host(host_id, zone, wait_for_health = wait_for_health, ebs_optimized = ebs_optimized)
+          peers.append(obj.instance.public_dns_name)
       
     def delete_db(self):
       self.exit()

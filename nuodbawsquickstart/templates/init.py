@@ -79,6 +79,7 @@ public_address = get_public_hostname()
 print "Setting Chef Data"
 chef_data = json.loads('$chef_json')
 chef_data['nuodb']['altAddr'] = public_address
+chef_data['nuodb']['advertiseAlt'] = True
 f = open("/var/chef/data.json", "w")
 f.write(json.dumps(chef_data))
 f.close()
