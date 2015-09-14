@@ -42,7 +42,7 @@ class Cluster:
         if not self.zoneconnections[zone].does_ami_exist(imageid=ami):
           raise Error("ami '%s' is not valid" % (ami))
         #common Chef information
-        chef_data = {"nuodb": {"is_broker": True, "enableSystemDatabase": True, "autoconsole": {"brokers": ["localhost"]}, "webconsole": {"brokers": ["localhost"]}}}
+        chef_data = {"nuodb": {"broker": True, "enableSystemDatabase": True}}
         chef_data['java'] = {
                              "install_flavor": "oracle",
                              "jdk_version": "7",
@@ -61,9 +61,9 @@ class Cluster:
           chef_data["nuodb"]['monitoring'] = {"enable": True, "alert_email": self.alert_email}
         else:
           chef_data["nuodb"]['monitoring'] = {"enable": False, "alert_email": ""}
-        chef_data["nuodb"]['domain_name'] = self.domain_name
-        chef_data["nuodb"]['domain_password'] = self.domain_password
-        chef_data["nuodb"]["start_services"] = True
+        chef_data["nuodb"]['domain'] = self.domain_name
+        chef_data["nuodb"]['domainPassword'] = self.domain_password
+        chef_data["nuodb"]["start_services"] = start_services
         if nuodb_rpm_url != None:
           chef_data["nuodb"]["download_url"] = nuodb_rpm_url
         if self.nuodbVersion != None:
@@ -148,9 +148,9 @@ class Cluster:
       for host_id in self.db['hosts']:
         host = self.get_host(host_id)
         if peer != None:
-          host['chef_data']['nuodb']['brokers'] = peers
+          host['chef_data']['nuodb']['peer'] = peer
         else:
-          host['chef_data']['nuodb']['brokers'] = [peer]
+          host['chef_data']['nuodb']['peer'] = peer
         obj = host['host']
         zone = obj.region
         if chosen_one == None:
@@ -161,7 +161,7 @@ class Cluster:
           
         else:
           wait_for_health = False
-          host['chef_data']['nuodb']['brokers'] = peers
+          host['chef_data']['nuodb']['peer'] = peer
           obj = self.__boot_host(host_id, zone, wait_for_health = wait_for_health, ebs_optimized = ebs_optimized)
       
     def delete_db(self):
