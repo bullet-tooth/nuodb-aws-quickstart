@@ -4,7 +4,7 @@ import json, os, time, urllib2
 
 print "Starting cloud-init from userdata"
 
-packages = ["git","mailx"]
+packages = ["git","mailx", "emacs"]
 
 commands = [
             #"hostname $hostname",
@@ -79,7 +79,6 @@ public_address = get_public_hostname()
 print "Setting Chef Data"
 chef_data = json.loads('$chef_json')
 chef_data['nuodb']['altAddr'] = public_address
-chef_data['nuodb']['autoconsole']['brokers'] = [public_address]
 f = open("/var/chef/data.json", "w")
 f.write(json.dumps(chef_data))
 f.close()
