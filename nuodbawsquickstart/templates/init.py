@@ -17,9 +17,10 @@ commands = [
             ]
 
 git_repos = {"nuodb": "https://github.com/nuodb/nuodb-chef.git",
+             "apt": "https://github.com/chef-cookbooks/apt.git",
              "java": "https://github.com/socrata-cookbooks/java",
-             "yum-epel": "https://github.com/opscode-cookbooks/yum-epel.git",
-             "yum": "https://github.com/opscode-cookbooks/yum.git"
+             "yum-epel": "https://github.com/chef-cookbooks/yum-epel.git",
+             "yum": "https://github.com/chef-cookbooks/yum"
              }
 for repo in git_repos:
   commands.append("if [ ! -d /var/chef/cookbooks/%s ]; then git clone %s /var/chef/cookbooks/%s; fi;" % (repo, git_repos[repo], repo))
